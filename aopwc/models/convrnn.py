@@ -33,7 +33,7 @@ class ConvLSTMCell(nn.Module):
 
         # Initialize cell and hidden state on the first iteration
         if hidden is None or cell_state is None:
-            batch, _, height, width, height = input.size()
+            batch, _, height, width = input.size()
             hidden = input.new_zeros(batch, self.hidden_chls, height, width)
             cell_state = input.new_zeros(batch, self.hidden_chls, height, width)
         

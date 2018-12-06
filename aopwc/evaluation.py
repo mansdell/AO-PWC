@@ -22,7 +22,7 @@ def masked_l1_loss(prediction, target, steps_ahead=0, size_average=True):
     target = target[:, steps_ahead:]
 
     # Weird Pytorch way of finding all the NaNs in the sequence
-    mask = target != target
+    mask = target == target
 
     # Compute pixelwise loss
     loss = F.l1_loss(prediction, target, reduce=False)
@@ -56,7 +56,7 @@ def masked_l2_loss(prediction, target, steps_ahead=0, size_average=True):
     target = target[:, steps_ahead:]
 
     # Ignore NaNs
-    mask = target != target
+    mask = target == target
 
     # Compute RMS
     sqr_error = (target - prediction) ** 2

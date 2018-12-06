@@ -28,7 +28,7 @@ class WavefrontDataset(Dataset):
             raise IndexError()
         
         path = os.path.join(self.directory, self.filenames[index])
-        return torch.from_numpy(np.load(path))
+        return torch.from_numpy(np.load(path).astype(np.float32))
 
 
 class SubDataset(Dataset):
@@ -76,7 +76,7 @@ def split_dataset(dataset, split_sizes, shuffle=True):
         indices = np.arange(len(dataset))
     
     # Split index array into chunks of the specified size
-    split_sizes = np.array(split_sizes).cumsum() * len(dataset)
+    split_sizes = (np.array(split_sizes).cumsum() * len(dataset)).astype(int)
     split_inds = np.split(indices, split_sizes)[:len(split_sizes)]
 
     # Return subset datasets
