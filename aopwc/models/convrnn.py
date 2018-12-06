@@ -19,7 +19,7 @@ class ConvLSTMCell(nn.Module):
         https://pytorch.org/docs/stable/nn.html#conv2d
         https://pytorch.org/docs/stable/nn.html#lstmcell
     """
-    
+
     def __init__(self, input_channels, hidden_channels, kernel_size=3, 
                  padding=1, bias=True):
         super(ConvLSTMCell, self).__init__()
@@ -61,9 +61,11 @@ class ConvLSTM(nn.Module):
     Args:
         hidden_channels (list): containing the output feature size for each of
             the LSTM layers 
+        steps_ahead (int): number of steps into the future to predict
     """
-    def __init__(self, hidden_channels):
+    def __init__(self, hidden_channels, steps_ahead=1):
         super(ConvLSTM, self).__init__()
+        self.steps_ahead = steps_ahead
 
         # Create LSTM layers
         in_channels = 1
@@ -82,9 +84,13 @@ class ConvLSTM(nn.Module):
         hidden = [None] * len(self.layers)
         cell = [None] * len(self.layers)
 
-        # Iterate over frames
-        predictions = list()
-        for frame in torch.unbind(sequence, dim=1):
+        # Initialize frames which have not yet been predicted
+        predictions = [
+            torch.zeros_like(sequence[:, 0]) for _ in range(self.steps_ahead)
+        ]
+
+        # Iterate over frames 0 to T-n
+        for frame in torch.unbind(sequence[:, :-self.steps_ahead], dim=1):
 
             # Apply ConvLSTM layers
             x = frame.unsqueeze(1)
