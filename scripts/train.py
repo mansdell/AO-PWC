@@ -109,7 +109,7 @@ def create_experiment(config):
 
 def parse_args():
     parser = ArgumentParser()
-    parser.add_argument('name', nargs='?', type=str,
+    parser.add_argument('--name', '-n', type=str, default=None,
                         help='name of the experiment. If left blank,'
                              + ' no logging information will be saved to disk')
     parser.add_argument('--logdir', '-d', type=str, default='experiments',

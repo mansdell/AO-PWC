@@ -1,5 +1,45 @@
 # AO-PWC
 
+## Training
+A predictive wavefront control network can be trained by running the `scripts/train.py` script. If the optional `--name` argument is provided, this will create a new results directory in the `./experiments` folder with config information, training results and experiment checkpoints. For example
+```
+python scripts/train.py --name my-exp
+```
+will create a new experiment at `./experiments/my-exp`. If the `--name` argument is omitted, the experiment will run but no results will be saved (handy for testing!). See the usage information below for details of additional command line arguments. 
+```
+usage: train.py [-h] [--name NAME] [--logdir LOGDIR] [--batch-size BATCH_SIZE]
+                [--lr LR] [--epochs EPOCHS] [--steps-ahead STEPS_AHEAD]
+                [--gpu GPU] [--arch {ConvLSTM}] [--hidden HIDDEN [HIDDEN ...]]
+                [--workers WORKERS] [--train-split TRAIN_SPLIT]
+                [--val-split VAL_SPLIT]
+
+optional arguments:
+  -h, --help            show this help message and exit
+  --name NAME, -n NAME  name of the experiment. If left blank, no logging
+                        information will be saved to disk
+  --logdir LOGDIR, -d LOGDIR
+                        location to store experiment log files
+  --batch-size BATCH_SIZE, -b BATCH_SIZE
+                        number of examples per mini-batch
+  --lr LR, -l LR        learning rate
+  --epochs EPOCHS, -e EPOCHS
+                        number of training epochs
+  --steps-ahead STEPS_AHEAD, -s STEPS_AHEAD
+                        number of timesteps into the future to predict
+  --gpu GPU, -g GPU     index of current gpu (use -1 for cpu training)
+  --arch {ConvLSTM}, -a {ConvLSTM}
+                        name of model architecture
+  --hidden HIDDEN [HIDDEN ...]
+                        number of feature channels in hidden layers
+  --workers WORKERS, -w WORKERS
+                        number of worker threads for data loading (use 0 for
+                        single-threaded mode)
+  --train-split TRAIN_SPLIT
+                        fraction of data used for training
+  --val-split VAL_SPLIT
+                        fraction of data used for validation
+```
+
 ## Directory structure
 An example of how we could structure the project to keep everything nice and organized, largely inspired by [this project](https://drivendata.github.io/cookiecutter-data-science/). This was just intended as a starting point so feel free to change! 
 ```
