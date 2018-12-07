@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from ..utils import remove_nans
 
 class ConvLSTMCell(nn.Module):
     """
@@ -89,8 +90,11 @@ class ConvLSTM(nn.Module):
             torch.zeros_like(sequence[:, 0]) for _ in range(self.steps_ahead)
         ]
 
+        # Remove NaNs from input
+        sequence = remove_nans(sequence[:, :-self.steps_ahead])
+
         # Iterate over frames 0 to T-n
-        for frame in torch.unbind(sequence[:, :-self.steps_ahead], dim=1):
+        for frame in torch.unbind(sequence, dim=1):
 
             # Apply ConvLSTM layers
             x = frame.unsqueeze(1)

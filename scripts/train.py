@@ -1,3 +1,7 @@
+"""
+Trains a Predictive Wavefront Model from scratch
+"""
+
 import os
 import csv
 import math
@@ -36,7 +40,7 @@ def run_epoch(dataloader, model, config, optimizer=None):
             wavefront = wavefront.cuda()
 
         # Run model to generate predicted wavefronts
-        predictions = model(aopwc.remove_nans(wavefront))
+        predictions = model(wavefront)
 
         # Compute loss
         loss = aopwc.masked_l1_loss(predictions, wavefront, config.steps_ahead)
