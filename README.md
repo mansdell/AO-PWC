@@ -1,4 +1,5 @@
 # AO-PWC
+![Predictions](figures/predictions.gif)
 
 ## Training
 A predictive wavefront control network can be trained by running the `scripts/train.py` script. If the optional `--name` argument is provided, this will create a new results directory in the `./experiments` folder with config information, training results and experiment checkpoints. For example
@@ -11,7 +12,7 @@ usage: train.py [-h] [--name NAME] [--logdir LOGDIR] [--batch-size BATCH_SIZE]
                 [--lr LR] [--epochs EPOCHS] [--steps-ahead STEPS_AHEAD]
                 [--gpu GPU] [--arch {ConvLSTM}] [--hidden HIDDEN [HIDDEN ...]]
                 [--workers WORKERS] [--train-split TRAIN_SPLIT]
-                [--val-split VAL_SPLIT]
+                [--val-split VAL_SPLIT] [--schedule [SCHEDULE [SCHEDULE ...]]]
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -38,7 +39,16 @@ optional arguments:
                         fraction of data used for training
   --val-split VAL_SPLIT
                         fraction of data used for validation
+  --schedule [SCHEDULE [SCHEDULE ...]]
+                        decrease lr by a factor of 10 after this many epochs
 ```
+
+## Inference
+A pretrained model can be run on the validation dataset by calling
+```
+python scripts/predict.py my-exp
+```
+where `my-exp` is the name of the experiment provided to the train script. 
 
 ## Directory structure
 An example of how we could structure the project to keep everything nice and organized, largely inspired by [this project](https://drivendata.github.io/cookiecutter-data-science/). This was just intended as a starting point so feel free to change! 

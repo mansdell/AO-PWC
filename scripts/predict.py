@@ -9,7 +9,8 @@ import torch
 import aopwc
 
 COLORMAP = 'inferno'
-
+VMIN = aopwc.WAVEFRONT_MEAN - 2 * aopwc.WAVEFRONT_STD
+VMAX = aopwc.WAVEFRONT_MEAN + 2 * aopwc.WAVEFRONT_STD
     
 
 def main():
@@ -43,7 +44,8 @@ def main():
     dataset = aopwc.WavefrontDataset('data/phase_screens_part1')
 
     # Setup matplotlib
-    fig, (gt_ax, pred_ax) = plt.subplots(ncols=2)
+    fig, (gt_ax, pred_ax) = plt.subplots(ncols=2, figsize=(12, 4))
+    cbar_ax = None
     plt.ion()
 
     # Iterate over examples in the dataset
@@ -58,10 +60,14 @@ def main():
         with torch.no_grad():
             prediction = model(aopwc.remove_nans(wavefront))
         
-        mask = (wavefront == wavefront)
+        # Un-normalize
+        wavefront = wavefront * aopwc.WAVEFRONT_STD + aopwc.WAVEFRONT_MEAN
+        prediction = prediction * aopwc.WAVEFRONT_STD + aopwc.WAVEFRONT_MEAN 
+        
+        # Compute RMS error over the current sequence
         sqr_error = aopwc.masked_l2_loss(
             prediction, wavefront, config.steps_ahead)
-        rms_error = math.sqrt(float(sqr_error)) * aopwc.WAVEFRONT_STD
+        rms_error = math.sqrt(float(sqr_error))
         
         # Plot predictions for each frame
         for t in range(0, wavefront.size(1), 10):
@@ -72,24 +78,33 @@ def main():
             mask = np.isnan(gt_frame)
 
             # Set figure title
-            fig.suptitle('Cube #{} -- $E_{{RMS}}$ = {:.1f}nm -- ' \
-                         'Elapsed time = {}ms'.format(i, rms_error, t))
+            fig.suptitle('Cube #{}  $E_{{RMS}}$ = {:.1f}nm  ' \
+                         'Elapsed time = {:2d}ms'.format(i, rms_error, t))
 
             # Visualize original frame
             gt_ax.clear()
             gt_ax.set_title('Original')
             gt_ax.imshow(ma.masked_array(gt_frame, mask=mask),
-                         cmap=COLORMAP, vmin=-2, vmax=2)
+                         cmap=COLORMAP, vmin=VMIN, vmax=VMAX)
+            gt_ax.axis('off')
             
             # Visualize predicted frame
             pred_ax.clear()
             pred_ax.set_title('Predicted')
-            pred_ax.imshow(ma.masked_array(pred_frame, mask=mask),
-                           cmap=COLORMAP, vmin=-2, vmax=2)
+            p = pred_ax.imshow(ma.masked_array(pred_frame, mask=mask),
+                           cmap=COLORMAP, vmin=VMIN, vmax=VMAX)
+            pred_ax.axis('off')
+        
+            # Add colorbar
+            cbar = plt.colorbar(p, ax=(gt_ax, pred_ax), cax=cbar_ax)
+            cbar.set_label('Phase offset (nm)')
+            cbar_ax = cbar.ax
             
+            # Draw figures
             plt.draw()
             plt.pause(0.01)
             time.sleep(0.1)
+            
 
 if __name__ == '__main__':
     main()
