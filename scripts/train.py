@@ -17,6 +17,7 @@ import matplotlib.pyplot as plt
 
 import torch
 from torch.utils.data import DataLoader
+from torch.optim.lr_scheduler import MultiStepLR
 
 import aopwc
 
@@ -141,7 +142,9 @@ def parse_args():
                         help='fraction of data used for training')
     parser.add_argument('--val-split', type=float, default=0.2,
                         help='fraction of data used for validation')
-    
+    parser.add_argument('--schedule', type=int, nargs='*', default=[50, 150],
+                        help='decrease lr by a factor of 10 after this many' \
+                             ' epochs')
     return parser.parse_args()
 
 
@@ -167,8 +170,7 @@ def main():
                             num_workers=config.workers)
 
     # Build model
-    if config.arch == 'ConvLSTM':
-        model = aopwc.ConvLSTM(config.hidden)
+    model = aopwc.make_model(config)
     
     # Move model to GPU
     if config.gpu >= 0:
@@ -178,6 +180,7 @@ def main():
     # Create optimizer
     optim = torch.optim.SGD(
         model.parameters(), config.lr, momentum=0.9, weight_decay=1e-4)
+    scheduler = MultiStepLR(optim, config.schedule)
 
     # Set up plotting
     plt.ion()
@@ -189,6 +192,9 @@ def main():
     for epoch in range(config.epochs):
         print('\n=== Starting epoch {} of {} ===\n'.format(
             epoch+1, config.epochs))
+
+        # Decay learning rate
+        scheduler.step()
 
         # Train the model for one epoch
         print('Training')
