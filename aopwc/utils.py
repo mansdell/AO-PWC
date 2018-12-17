@@ -58,7 +58,6 @@ def save_checkpoint(filename, epoch, model, optimizer=None, best_score=0):
         optimizer (nn.optim.Optimizer): the optimizer used for training
         best_score (float): the best score observed so far
     """
-    print('Saving checkpoint \'{}\''.format(filename))
     torch.save({
         'model' : model.state_dict(),
         'optim' : optimizer.state_dict() if optimizer is not None else None,

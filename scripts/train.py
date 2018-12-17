@@ -62,7 +62,6 @@ def run_epoch(dataloader, model, config, optimizer=None):
 
 def create_experiment(config):
     # Print config information
-    print('-' * 31 + '\n--- Starting new experiment ---\n' + '-' * 31)
     for key, value in config.__dict__.items():
         print('{}: {}'.format(key, value))
     
@@ -183,13 +182,15 @@ def main():
         scheduler.step()
 
         # Train the model for one epoch
-        print('Training')
         train_loss, train_rms = run_epoch(train_loader, model, config, optim)
 
+        tqdm.write('train epoch {}: train loss: {:.6f}\ttrain RMS: {:.2f}\tLR: {:.3f}'.format(epoch, train_loss, train_rms, optim.param_groups[0]['lr']))
+
         # Evaluate model on the validation set
-        print('Validating')
         with torch.no_grad():
             val_loss, val_rms = run_epoch(val_loader, model, config)
+
+        tqdm.write('val epoch {}: val loss: {:.6f}\tval RMS: {:.2f}'.format(epoch, val_loss, val_rms))
 
         # Record metrics and plot
         if logdir is not None:
@@ -200,12 +201,6 @@ def main():
             tensorboard.add_scalar('val/loss', val_loss, epoch)
             tensorboard.add_scalar('val/rms_error', val_rms, epoch)
             
-            # if self.verbose_tensorboard:
-            #     self.tensorboard.add_histogram('train/data', data[:], n_iter, bins='auto')
-            #     self.tensorboard.add_histogram('train/label', target, n_iter, bins='auto')
-            #     data_video = torch.unsqueeze(data, dim=1)
-            #     self.tensorboard.add_video('train/tpf_video', vid_tensor=data_video)
-
             # Save metrics
             aopwc.write_csv(os.path.join(logdir, 'metrics.csv'), epoch=epoch,
                 train_loss=train_loss, train_rms=train_rms, val_loss=val_loss,
@@ -218,9 +213,6 @@ def main():
             if best_score == val_rms:
                 aopwc.save_checkpoint(os.path.join(logdir, 'best.pth'),
                     epoch, model, optim, best_score)
-        
-        tqdm.write('train epoch {}: train loss: {:.6f}\tval loss: {:.6f}\ttrain RMS: {:.2f}\tval RMS: {:.2f}\tLR: {:.3f}'.format(epoch, train_loss, val_loss, train_rms, val_rms, optim.param_groups[0]['lr']))
-
 
     print('\n=== Training complete! ===')
     aopwc.save_checkpoint(os.path.join(logdir, 'final.pth'),
