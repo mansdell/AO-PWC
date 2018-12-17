@@ -175,9 +175,6 @@ def main():
 
     # Main training loop
     for epoch in range(config.epochs):
-        print('\n=== Starting epoch {} of {} ===\n'.format(
-            epoch+1, config.epochs))
-
         # Decay learning rate
         scheduler.step()
 
