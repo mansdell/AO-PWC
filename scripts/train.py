@@ -6,26 +6,23 @@ import os
 import csv
 import math
 import time
+import git
+import sys
+import platform
 from argparse import ArgumentParser
-from progressbar import ProgressBar
+from tqdm import tqdm
 
 # If we're running on a remote server with out graphics, use the Agg backend
-if 'DISPLAY' not in os.environ:
-    import matplotlib
-    matplotlib.use('Agg')
-import matplotlib.pyplot as plt
 
 import torch
 from torch.utils.data import DataLoader
 from torch.optim.lr_scheduler import MultiStepLR
 
+from tensorboardX import SummaryWriter
+
 import aopwc
 
 def run_epoch(dataloader, model, config, optimizer=None):
-    
-    # Create progress bar
-    progress = ProgressBar()
-
     # Initialize metrics
     total_loss = 0
     total_sqr_error = 0
@@ -34,7 +31,7 @@ def run_epoch(dataloader, model, config, optimizer=None):
     model.train() if optimizer is not None else model.eval()
 
     # Iterate over examples in the dataset
-    for wavefront in progress(dataloader):
+    for wavefront in tqdm(dataloader):
 
         # Move inputs to GPU
         if config.gpu >= 0:
@@ -61,34 +58,10 @@ def run_epoch(dataloader, model, config, optimizer=None):
     avg_loss = total_loss / count
     rms_error = math.sqrt(total_sqr_error / count) * aopwc.WAVEFRONT_STD
 
-    # Print epoch summary
-    print(' - Loss: {:.2e}\n - RMS error: {:.2f}nm\n'.format(
-        avg_loss, rms_error))
-
     return avg_loss, rms_error
 
-
-def plot(metrics, plot_name, logdir):
-    fig = plt.figure(plot_name)
-    fig.clear()
-
-    train_metrics, val_metrics = zip(*metrics)
-    plt.plot(train_metrics, label='train')
-    plt.plot(val_metrics, label='val')
-
-    plt.xlabel('epochs')
-    plt.ylabel(plot_name)
-    plt.title(plot_name)
-    plt.legend()
-
-    if logdir is not None:
-        plt.savefig(os.path.join(logdir, '{}.pdf'.format(plot_name)))
-   
-
 def create_experiment(config):
-
     # Print config information
-    print('-' * 31 + '\n--- Starting new experiment ---\n' + '-' * 31)
     for key, value in config.__dict__.items():
         print('{}: {}'.format(key, value))
     
@@ -108,7 +81,7 @@ def create_experiment(config):
 
     # Save the config data to a YAML file
     aopwc.save_config(logdir, config)
-
+    
     return logdir
 
 
@@ -156,6 +129,21 @@ def main():
     # Create directory for the experiment and save the config
     logdir = create_experiment(config)
 
+    # Create tensorboard summary writer
+    dir_suffix = time.strftime("%Y-%m-%d-%H-%M-%S") + '-' + platform.node()
+    print('Creating tensorboard summary...')
+    log_dir = os.path.join(logdir, dir_suffix)
+    tensorboard = SummaryWriter(log_dir=logdir, comment='')
+
+    # Get current GIT SHA tag
+    repo = git.Repo(search_parent_directories=True)
+    git_sha = repo.head.object.hexsha
+
+    # Output debug stuff to tensorboard strings
+    tensorboard.add_text('command_line', ' '.join(sys.argv), 0)
+    tensorboard.add_text('git_sha', str(git_sha), 0)
+    tensorboard.add_text('config', str(config.__dict__), 0)
+
     # Create dataset
     dataset = aopwc.WavefrontDataset('./data/phase_screens_part1')
 
@@ -183,34 +171,33 @@ def main():
     scheduler = MultiStepLR(optim, config.schedule)
 
     # Set up plotting
-    plt.ion()
-    loss_metrics = list()
-    rms_metrics = list()
     best_score = float('inf')
 
     # Main training loop
     for epoch in range(config.epochs):
-        print('\n=== Starting epoch {} of {} ===\n'.format(
-            epoch+1, config.epochs))
-
         # Decay learning rate
         scheduler.step()
 
         # Train the model for one epoch
-        print('Training')
         train_loss, train_rms = run_epoch(train_loader, model, config, optim)
 
+        tqdm.write('train epoch {}: train loss: {:.6f}\ttrain RMS: {:.2f}\tLR: {:.3f}'.format(epoch, train_loss, train_rms, optim.param_groups[0]['lr']))
+
         # Evaluate model on the validation set
-        print('Validating')
         with torch.no_grad():
             val_loss, val_rms = run_epoch(val_loader, model, config)
 
+        tqdm.write('val epoch {}: val loss: {:.6f}\tval RMS: {:.2f}'.format(epoch, val_loss, val_rms))
+
         # Record metrics and plot
-        loss_metrics.append((train_loss, val_loss))
-        rms_metrics.append((train_rms, val_rms))
-
         if logdir is not None:
+            tensorboard.add_scalar('train/loss', train_loss, epoch)
+            tensorboard.add_scalar('train/rms_error', train_rms, epoch)
+            tensorboard.add_scalar('train/optimizer/lr', optim.param_groups[0]['lr'], epoch)
 
+            tensorboard.add_scalar('val/loss', val_loss, epoch)
+            tensorboard.add_scalar('val/rms_error', val_rms, epoch)
+            
             # Save metrics
             aopwc.write_csv(os.path.join(logdir, 'metrics.csv'), epoch=epoch,
                 train_loss=train_loss, train_rms=train_rms, val_loss=val_loss,
@@ -223,13 +210,6 @@ def main():
             if best_score == val_rms:
                 aopwc.save_checkpoint(os.path.join(logdir, 'best.pth'),
                     epoch, model, optim, best_score)
-        
-        # Plot and save figures
-        plot(loss_metrics, 'loss', logdir)
-        plot(rms_metrics, 'rms_error', logdir)
-        plt.draw()
-        plt.pause(0.01)
-
 
     print('\n=== Training complete! ===')
     aopwc.save_checkpoint(os.path.join(logdir, 'final.pth'),
