@@ -115,6 +115,8 @@ def parse_args():
                         help='fraction of data used for training')
     parser.add_argument('--val-split', type=float, default=0.2,
                         help='fraction of data used for validation')
+    parser.add_argument('--gamma', type=float, default=0.95,
+                        help='exponential lr decay factor (gamma)')
     return parser.parse_args()
 
 
@@ -165,7 +167,7 @@ def main():
     # Create optimizer
     optim = torch.optim.SGD(
         model.parameters(), config.lr, momentum=0.9, weight_decay=1e-4)
-    scheduler = ExponentialLR(optim)
+    scheduler = ExponentialLR(optim, config.gamma)
 
     # Set up plotting
     best_score = float('inf')
