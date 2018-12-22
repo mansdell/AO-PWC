@@ -16,7 +16,7 @@ from tqdm import tqdm
 
 import torch
 from torch.utils.data import DataLoader
-from torch.optim.lr_scheduler import MultiStepLR
+from torch.optim.lr_scheduler import ExponentialLR
 
 from tensorboardX import SummaryWriter
 
@@ -115,9 +115,6 @@ def parse_args():
                         help='fraction of data used for training')
     parser.add_argument('--val-split', type=float, default=0.2,
                         help='fraction of data used for validation')
-    parser.add_argument('--schedule', type=int, nargs='*', default=[50, 150],
-                        help='decrease lr by a factor of 10 after this many' \
-                             ' epochs')
     return parser.parse_args()
 
 
@@ -168,7 +165,7 @@ def main():
     # Create optimizer
     optim = torch.optim.SGD(
         model.parameters(), config.lr, momentum=0.9, weight_decay=1e-4)
-    scheduler = MultiStepLR(optim, config.schedule)
+    scheduler = ExponentialLR(optim)
 
     # Set up plotting
     best_score = float('inf')
