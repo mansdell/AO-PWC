@@ -94,7 +94,7 @@ def parse_args():
                         help='location to store experiment log files')
     parser.add_argument('--batch-size', '-b', type=int, default=32,
                         help='number of examples per mini-batch')
-    parser.add_argument('--lr', '-l', type=float, default=1e-2,
+    parser.add_argument('--lr', '-l', type=float, default=0.1,
                         help='learning rate')
     parser.add_argument('--epochs', '-e', type=int, default=100,
                         help='number of training epochs')
