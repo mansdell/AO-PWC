@@ -92,7 +92,7 @@ def parse_args():
                              + ' no logging information will be saved to disk')
     parser.add_argument('--logdir', '-d', type=str, default='experiments',
                         help='location to store experiment log files')
-    parser.add_argument('--batch-size', '-b', type=int, default=24,
+    parser.add_argument('--batch-size', '-b', type=int, default=32,
                         help='number of examples per mini-batch')
     parser.add_argument('--lr', '-l', type=float, default=1e-2,
                         help='learning rate')
@@ -106,7 +106,7 @@ def parse_args():
                         choices=['ConvLSTM'],
                         help='name of model architecture')
     parser.add_argument('--hidden', type=int, nargs='+',
-                        default=[16, 32, 64, 64],
+                        default=[16, 32],
                         help='number of feature channels in hidden layers')
     parser.add_argument('--workers', '-w', type=int, default=4,
                         help='number of worker threads for data loading'
