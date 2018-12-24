@@ -16,7 +16,7 @@ from tqdm import tqdm
 
 import torch
 from torch.utils.data import DataLoader
-from torch.optim.lr_scheduler import MultiStepLR
+from torch.optim.lr_scheduler import ExponentialLR
 
 from tensorboardX import SummaryWriter
 
@@ -92,9 +92,9 @@ def parse_args():
                              + ' no logging information will be saved to disk')
     parser.add_argument('--logdir', '-d', type=str, default='experiments',
                         help='location to store experiment log files')
-    parser.add_argument('--batch-size', '-b', type=int, default=24,
+    parser.add_argument('--batch-size', '-b', type=int, default=32,
                         help='number of examples per mini-batch')
-    parser.add_argument('--lr', '-l', type=float, default=1e-2,
+    parser.add_argument('--lr', '-l', type=float, default=0.1,
                         help='learning rate')
     parser.add_argument('--epochs', '-e', type=int, default=100,
                         help='number of training epochs')
@@ -106,7 +106,7 @@ def parse_args():
                         choices=['ConvLSTM'],
                         help='name of model architecture')
     parser.add_argument('--hidden', type=int, nargs='+',
-                        default=[16, 32, 64, 64],
+                        default=[16, 32],
                         help='number of feature channels in hidden layers')
     parser.add_argument('--workers', '-w', type=int, default=4,
                         help='number of worker threads for data loading'
@@ -115,9 +115,8 @@ def parse_args():
                         help='fraction of data used for training')
     parser.add_argument('--val-split', type=float, default=0.2,
                         help='fraction of data used for validation')
-    parser.add_argument('--schedule', type=int, nargs='*', default=[50, 150],
-                        help='decrease lr by a factor of 10 after this many' \
-                             ' epochs')
+    parser.add_argument('--gamma', type=float, default=0.95,
+                        help='exponential lr decay factor (gamma)')
     return parser.parse_args()
 
 
@@ -168,7 +167,7 @@ def main():
     # Create optimizer
     optim = torch.optim.SGD(
         model.parameters(), config.lr, momentum=0.9, weight_decay=1e-4)
-    scheduler = MultiStepLR(optim, config.schedule)
+    scheduler = ExponentialLR(optim, config.gamma)
 
     # Set up plotting
     best_score = float('inf')
