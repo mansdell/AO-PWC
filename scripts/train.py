@@ -98,7 +98,7 @@ def parse_args():
                         help='learning rate')
     parser.add_argument('--momentum', '-m', type=float, default=0.9,
                         help='momentum')
-    parser.add_argument('--wd', '-w', type=float, default=1e-4,
+    parser.add_argument('--wd', type=float, default=1e-4,
                         help='weight decay')
     parser.add_argument('--epochs', '-e', type=int, default=100,
                         help='number of training epochs')
