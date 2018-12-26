@@ -96,6 +96,10 @@ def parse_args():
                         help='number of examples per mini-batch')
     parser.add_argument('--lr', '-l', type=float, default=0.1,
                         help='learning rate')
+    parser.add_argument('--momentum', '-m', type=float, default=0.9,
+                        help='momentum')
+    parser.add_argument('--wd', '-w', type=float, default=1e-4,
+                        help='weight decay')
     parser.add_argument('--epochs', '-e', type=int, default=100,
                         help='number of training epochs')
     parser.add_argument('--steps-ahead', '-s', type=int, default=2,
@@ -166,7 +170,7 @@ def main():
 
     # Create optimizer
     optim = torch.optim.SGD(
-        model.parameters(), config.lr, momentum=0.9, weight_decay=1e-4)
+        model.parameters(), config.lr, momentum=config.momentum, weight_decay=config.wd)
     scheduler = ExponentialLR(optim, config.gamma)
 
     # Set up plotting
