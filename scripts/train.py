@@ -11,18 +11,15 @@ import sys
 import platform
 from argparse import ArgumentParser
 from tqdm import tqdm
-
-# If we're running on a remote server with out graphics, use the Agg backend
-
 import torch
 from torch.utils.data import DataLoader
 from torch.optim.lr_scheduler import ExponentialLR
-
 from tensorboardX import SummaryWriter
-
 import aopwc
 
+
 def run_epoch(dataloader, model, config, optimizer=None):
+    
     # Initialize metrics
     total_loss = 0
     total_sqr_error = 0
@@ -33,6 +30,10 @@ def run_epoch(dataloader, model, config, optimizer=None):
     # Iterate over examples in the dataset
     for wavefront in tqdm(dataloader):
 
+        # Normalize wavefront
+        wavefront -= aopwc.WAVEFRONT_MEAN
+        wavefront /= aopwc.WAVEFRONT_STD
+
         # Move inputs to GPU
         if config.gpu >= 0:
             wavefront = wavefront.cuda()
@@ -40,27 +41,35 @@ def run_epoch(dataloader, model, config, optimizer=None):
         # Run model to generate predicted wavefronts
         predictions = model(wavefront)
 
-        # Compute loss
+        # Compute loss (on normalized dataset)
         loss = aopwc.masked_l1_loss(predictions, wavefront, config.steps_ahead)
-        sqr_error = aopwc.masked_l2_loss(predictions, wavefront, 
-                                         config.steps_ahead)
         total_loss += float(loss)
-        total_sqr_error += float(sqr_error)
 
         # Update parameters if we are in training mode
         if optimizer is not None:
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
+            
+        # Compute squared error (on un-normalized dataset)
+        wavefront *= aopwc.WAVEFRONT_STD
+        wavefront += aopwc.WAVEFRONT_MEAN
+        predictions *= aopwc.WAVEFRONT_STD
+        predictions += aopwc.WAVEFRONT_MEAN
+        sqr_error = aopwc.masked_l2_loss(predictions, wavefront, 
+                                         config.steps_ahead)
+        total_sqr_error += float(sqr_error)
     
     # Compute average loss
     count = len(dataloader)
     avg_loss = total_loss / count
-    rms_error = math.sqrt(total_sqr_error / count) * aopwc.WAVEFRONT_STD
+    rms_error = math.sqrt(total_sqr_error / count)
 
     return avg_loss, rms_error
 
+
 def create_experiment(config):
+    
     # Print config information
     for key, value in config.__dict__.items():
         print('{}: {}'.format(key, value))
@@ -111,12 +120,8 @@ def parse_args():
     parser.add_argument('--workers', '-w', type=int, default=4,
                         help='number of worker threads for data loading'
                              + ' (use 0 for single-threaded mode)')
-    parser.add_argument('--train-split', type=float, default=0.8,
-                        help='fraction of data used for training')
-    parser.add_argument('--val-split', type=float, default=0.2,
-                        help='fraction of data used for validation')
     parser.add_argument('--gamma', type=float, default=0.95,
-                        help='exponential lr decay factor (gamma)')
+                        help='exponential lr decay factor (gamma); use 1.0 for no scheduling')
     return parser.parse_args()
 
 
@@ -128,23 +133,26 @@ def main():
     # Create directory for the experiment and save the config
     logdir = create_experiment(config)
 
-    # Create tensorboard summary writer
-    dir_suffix = time.strftime("%Y-%m-%d-%H-%M-%S") + '-' + platform.node()
-    print('Creating tensorboard summary...')
-    log_dir = os.path.join(logdir, dir_suffix)
-    tensorboard = SummaryWriter(log_dir=logdir, comment='')
+    # Initialize TensorBoard
+    if logdir is not None:
+        
+        # Create tensorboard summary writer
+        dir_suffix = time.strftime("%Y-%m-%d-%H-%M-%S") + '-' + platform.node()
+        print('Creating tensorboard summary...')
+        log_dir = os.path.join(logdir, dir_suffix)
+        tensorboard = SummaryWriter(log_dir=logdir, comment='')
 
-    # Get current GIT SHA tag
-    repo = git.Repo(search_parent_directories=True)
-    git_sha = repo.head.object.hexsha
+        # Get current GIT SHA tag
+        repo = git.Repo(search_parent_directories=True)
+        git_sha = repo.head.object.hexsha
 
-    # Output debug stuff to tensorboard strings
-    tensorboard.add_text('command_line', ' '.join(sys.argv), 0)
-    tensorboard.add_text('git_sha', str(git_sha), 0)
-    tensorboard.add_text('config', str(config.__dict__), 0)
+        # Output debug stuff to tensorboard strings
+        tensorboard.add_text('command_line', ' '.join(sys.argv), 0)
+        tensorboard.add_text('git_sha', str(git_sha), 0)
+        tensorboard.add_text('config', str(config.__dict__), 0)
 
     # Create dataset
-    dataset = aopwc.WavefrontDataset('./data/phase_screens_part1')
+    dataset = aopwc.WavefrontDataset('./data/phase_screens_part1_raw')
 
     # Split dataset into train and validation sets
     train_data, val_data = aopwc.split_dataset(
@@ -174,6 +182,7 @@ def main():
 
     # Main training loop
     for epoch in range(config.epochs):
+        
         # Decay learning rate
         scheduler.step()
 
@@ -190,6 +199,7 @@ def main():
 
         # Record metrics and plot
         if logdir is not None:
+            
             tensorboard.add_scalar('train/loss', train_loss, epoch)
             tensorboard.add_scalar('train/rms_error', train_rms, epoch)
             tensorboard.add_scalar('train/optimizer/lr', optim.param_groups[0]['lr'], epoch)
