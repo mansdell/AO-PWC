@@ -5,8 +5,8 @@ from torch.utils.data import Dataset
 
 # Statistics calculated over phase_screens_part1, see 
 # scripts/normalize_phase_screens.py for more details
-WAVEFRONT_MEAN = -9.48
-WAVEFRONT_STD = 2163.02 
+WAVEFRONT_MEAN = -9.59
+WAVEFRONT_STD = 2161.88 
 
 class WavefrontDataset(Dataset):
     """
