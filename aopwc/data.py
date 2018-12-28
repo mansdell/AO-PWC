@@ -3,12 +3,15 @@ import torch
 import numpy as np
 from torch.utils.data import Dataset
 
-# Statistics calculated over phase_screens_part1, see 
-# scripts/normalize_phase_screens.py for more details
+
+# Statistics calculated over training set [0:40000] of phase_screens_part1 
+# see scripts/normalize_phase_screens_v2.py for more details
 WAVEFRONT_MEAN = -9.59
-WAVEFRONT_STD = 2161.88 
+WAVEFRONT_STD = 2161.88
+
 
 class WavefrontDataset(Dataset):
+    
     """
     Dataset class for loading wavefront sequences
 
@@ -32,6 +35,7 @@ class WavefrontDataset(Dataset):
 
 
 class SubDataset(Dataset):
+    
     """
     A dataset class representing a subset of another dataset
 
@@ -54,7 +58,8 @@ class SubDataset(Dataset):
         return self.dataset[self.indices[index]]
 
 
-def split_dataset(dataset, split_sizes, shuffle=True):
+def split_dataset(dataset, split_sizes, shuffle=False):
+    
     """
     Splits a dataset into subsets of the specified size.
 
@@ -81,7 +86,3 @@ def split_dataset(dataset, split_sizes, shuffle=True):
 
     # Return subset datasets
     return [SubDataset(dataset, inds) for inds in split_inds]
-
-    
-
-    
