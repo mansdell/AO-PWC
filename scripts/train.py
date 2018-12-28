@@ -60,7 +60,7 @@ def run_epoch(dataloader, model, config, optimizer=None):
                                          config.steps_ahead)
         total_sqr_error += float(sqr_error)
     
-    # Compute average loss
+    # Compute average loss and rms
     count = len(dataloader)
     avg_loss = total_loss / count
     rms_error = math.sqrt(total_sqr_error / count)
@@ -155,8 +155,7 @@ def main():
     dataset = aopwc.WavefrontDataset('./data/phase_screens_part1_raw')
 
     # Split dataset into train and validation sets
-    train_data, val_data = aopwc.split_dataset(
-        dataset, (config.train_split, config.val_split), shuffle=False)
+    train_data, val_data = aopwc.split_dataset(dataset, (0.8, 0.2), shuffle=False)
 
     # Create dataloaders
     train_loader = DataLoader(train_data, config.batch_size, shuffle=True, 
