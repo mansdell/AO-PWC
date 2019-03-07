@@ -1,6 +1,7 @@
 # Exclude data and experiments directory from repo
 data/*
 experiments/*
+notebooks/*
 *.npy
 *.npz
 

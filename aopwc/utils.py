@@ -2,6 +2,7 @@ import os
 import csv
 import torch
 import yaml
+import numpy as np
 from argparse import Namespace
 
 def remove_nans(tensor, replace_with=0.):
@@ -78,3 +79,10 @@ def load_checkpoint(filename, model, optimizer=None):
         optimizer.load_state_dict(ckpt['optim'])
     
     return ckpt['epoch'], ckpt['best_score']
+
+
+def convert_figure(fig):
+    # Convert figure to numpy via a string array
+    fig.canvas.draw()
+    data = np.fromstring(fig.canvas.tostring_rgb(), dtype=np.uint8, sep='')
+    return data.reshape(fig.canvas.get_width_height()[::-1] + (3,))

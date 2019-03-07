@@ -1,5 +1,6 @@
 from .convrnn import ConvLSTM
 from .prednet import PredNet
+from .tip_tilt import TipTiltNetwork
 
 def make_model(config):
     """

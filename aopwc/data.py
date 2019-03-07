@@ -34,6 +34,30 @@ class WavefrontDataset(Dataset):
         return torch.from_numpy(np.load(path).astype(np.float32))
 
 
+class TipTiltDataset(Dataset):
+    """
+    Dataset class for loading open loop tip-tilt data
+
+    Args:
+        directory (str): path to folder containing npy files
+    """
+
+    def __init__(self, directory):
+        self.directory = os.path.abspath(directory)
+        self.filenames = sorted(os.listdir(directory))
+    
+    def __len__(self):
+        return len(self.filenames)
+
+    def __getitem__(self, index):
+        if index >= len(self):
+            raise IndexError()
+        
+        path = os.path.join(self.directory, self.filenames[index])
+        return torch.from_numpy(np.load(path).astype(np.float32)).transpose()
+
+
+
 class SubDataset(Dataset):
     
     """
