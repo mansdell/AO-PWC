@@ -164,11 +164,12 @@ def main():
     # Create directory for the experiment and save the config
     logdir, tensorboard = create_experiment(config)
 
-    # Create dataset
-    # train_data = aopwc.TipTiltDataset('./data/keck_tiptilt/train')
-    # val_data = aopwc.TipTiltDataset('./data/keck_tiptilt/val')
-    train_data = torch.rand(100000, 2, 100)
-    val_data = torch.rand(100000, 2, 100)
+    # Load training an validation datasets
+    print('Loading train data...')
+    train_data = aopwc.TipTiltDataset('./data/keck_tiptilt/train')
+    print('Loading validation data...')
+    val_data = aopwc.TipTiltDataset('./data/keck_tiptilt/val')
+
 
     # Create dataloaders
     train_loader = DataLoader(train_data, config.batch_size, shuffle=True, 

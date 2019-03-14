@@ -43,18 +43,22 @@ class TipTiltDataset(Dataset):
     """
 
     def __init__(self, directory):
-        self.directory = os.path.abspath(directory)
-        self.filenames = sorted(os.listdir(directory))
+        examples = list()
+
+        # Pre-load examples into memory
+        for filename in sorted(os.listdir(directory)):
+            path = os.path.join(directory, filename)
+            data = torch.from_numpy(np.load(path).astype(np.float32))
+            examples.append(data.transpose(0, 1))
+        
+        # Concatenate into a single torch tensor
+        self.examples = torch.stack(examples)
     
     def __len__(self):
-        return len(self.filenames)
+        return len(self.examples)
 
     def __getitem__(self, index):
-        if index >= len(self):
-            raise IndexError()
-        
-        path = os.path.join(self.directory, self.filenames[index])
-        return torch.from_numpy(np.load(path).astype(np.float32)).transpose()
+        return self.examples[index]
 
 
 
