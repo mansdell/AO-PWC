@@ -10,8 +10,6 @@ class CausalConvolution(nn.Conv1d):
         super(CausalConvolution, self).__init__(
             in_channels, out_channels, kernel_size)
         self.pad = kernel_size - 1
-        nn.init.constant_(self.weight, 1.)
-        nn.init.constant_(self.bias, 0.)
     
     def forward(self, x):
         x = F.pad(x, (self.pad, 0))
@@ -53,7 +51,7 @@ class TipTiltNetwork(nn.Module):
             x = F.relu(layer(x))
 
         # Predict x-y coordinates and unnormalize
-        out = self.fc(x) * self.stdev + self.mean
+        out = self.fc(x) * self.stdev + input
 
         # Align predictions with inputs
         return torch.cat(
